@@ -27,8 +27,9 @@ __C.YOLO.IOU_LOSS_THRESH      = 0.5
 # Train options
 __C.TRAIN                     = edict()
 
-__C.TRAIN.ANNOT_PATH          = "./data/dataset/val2017.txt"
-__C.TRAIN.BATCH_SIZE          = 2
+# __C.TRAIN.ANNOT_PATH          = "./data/dataset/val2017.txt"
+__C.TRAIN.ANNOT_PATH          = "/mnt/lzm/data/Xray/train.txt"
+__C.TRAIN.BATCH_SIZE          = 32
 # __C.TRAIN.INPUT_SIZE            = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
 __C.TRAIN.INPUT_SIZE          = 416
 __C.TRAIN.DATA_AUG            = True
@@ -43,7 +44,8 @@ __C.TRAIN.SECOND_STAGE_EPOCHS   = 30
 # TEST options
 __C.TEST                      = edict()
 
-__C.TEST.ANNOT_PATH           = "./data/dataset/val2017.txt"
+# __C.TEST.ANNOT_PATH           = "./data/dataset/val2017.txt"
+__C.TEST.ANNOT_PATH           = "/mnt/lzm/data/Xray/val.txt"
 __C.TEST.BATCH_SIZE           = 2
 __C.TEST.INPUT_SIZE           = 416
 __C.TEST.DATA_AUG             = False
