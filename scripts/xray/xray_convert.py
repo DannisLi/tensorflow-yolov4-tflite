@@ -4,6 +4,7 @@ import os
 from absl import app, flags
 from absl.flags import FLAGS
 from lxml import etree
+from sklearn.model_selection import train_test_split
 
 
 flags.DEFINE_string('image_dir', '/mnt/lzm/data/Xray/VOCdevkit/VOC2012/JPEGImages', 'path to image dir')
@@ -17,9 +18,12 @@ flags.DEFINE_string('val_output', '../../data/dataset/voc2012_val.txt', 'path to
 flags.DEFINE_boolean('no_val', False, 'if uses this flag, it does not convert a list of val')
 
 
+base_dir = "/mnt/lzm/data/Xray/train"
+ratio = 0.2
+
+classes_names = ["knife", "scissors", "lighter", "zippooil", "pressure", "slingshot", "handcuffs", "nailpolish", "powerbank", "firecrackers"]
+
 def convert_annotation(list_txt, output_path, image_dir, anno_dir, class_names):
-    IMAGE_EXT = '.jpg'
-    ANNO_EXT = '.xml'
 
     with open(list_txt, 'r') as f, open(output_path, 'w') as wf:
         while True:
@@ -67,6 +71,21 @@ def convert_voc(image_dir, anno_dir, train_list_txt, val_list_txt, classes, trai
 
 
 def main(_argv):
+    train_img_list = []
+    val_img_list = []
+
+    for domain_no in range(1, 7):
+        domain_img_list = []
+        domain_base_dir = os.path.join(base_dir, "domain%d" % domain_no)
+        for fname in os.listdir(domain_base_dir):
+            if fname != "XML":
+                fpath = os.path.join(domain_base_dir, fname)
+                domain_img_list.append(fpath)
+        domain_train_img_list, domain_val_img_list = train_test_split(domain_img_list, test_size=ratio)
+        train_img_list += domain_train_img_list
+        val_img_list += domain_val_img_list
+
+    print (len(train_img_list), len(val_img_list))
     convert_voc(FLAGS.image_dir, FLAGS.anno_dir, FLAGS.train_list_txt, FLAGS.val_list_txt, FLAGS.classes, FLAGS.train_output, FLAGS.val_output, FLAGS.no_val)
     print("Complete convert voc data!")
 
