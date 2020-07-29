@@ -31,12 +31,12 @@ def convert_annotation(_list, output_path):
                 class_idx = class_names.index(name)
                 
                 box_element = obj_element.find("bndbox")
-                xmin = box_element.find('xmin').text
-                ymin = box_element.find('ymin').text
-                xmax = box_element.find('xmax').text
-                ymax = box_element.find('ymax').text
+                xmin = int(float(box_element.find('xmin').text))
+                ymin = int(float(box_element.find('ymin').text))
+                xmax = int(float(box_element.find('xmax').text))
+                ymax = int(float(box_element.find('ymax').text))
 
-                box_annotations.append(','.join([xmin, ymin, xmax, ymax, str(class_idx)]))
+                box_annotations.append(','.join([str(xmin), str(ymin), str(xmax), str(ymax), str(class_idx)]))
 
             
             img_path = os.path.join(base_dir, root.find("filename").text)
