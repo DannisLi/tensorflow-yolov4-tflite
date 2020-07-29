@@ -1,97 +1,76 @@
-import sys
-import os
+# coding: utf8
 
-from absl import app, flags
-from absl.flags import FLAGS
-from lxml import etree
+import os, sys
+import xml.etree.ElementTree as ET
 from sklearn.model_selection import train_test_split
 
-
-flags.DEFINE_string('image_dir', '/mnt/lzm/data/Xray/VOCdevkit/VOC2012/JPEGImages', 'path to image dir')
-flags.DEFINE_string('anno_dir', '../../data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/Annotations', 'path to anno dir')
-flags.DEFINE_string('train_list_txt', '../../data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/ImageSets/Main/train.txt', 'path to a set of train')
-flags.DEFINE_string('val_list_txt', '../../data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/ImageSets/Main/val.txt', 'path to a set of val')
-flags.DEFINE_string('classes', '../../data/classes/voc2012.names', 'path to a list of class names')
-flags.DEFINE_string('train_output', '../../data/dataset/voc2012_train.txt', 'path to a file for train')
-flags.DEFINE_string('val_output', '../../data/dataset/voc2012_val.txt', 'path to a file for val')
-
-flags.DEFINE_boolean('no_val', False, 'if uses this flag, it does not convert a list of val')
 
 
 base_dir = "/mnt/lzm/data/Xray/train"
 ratio = 0.2
 
-classes_names = ["knife", "scissors", "lighter", "zippooil", "pressure", "slingshot", "handcuffs", "nailpolish", "powerbank", "firecrackers"]
+class_names = ["knife", "scissors", "lighter", "zippooil", "pressure", "slingshot", "handcuffs", "nailpolish", "powerbank", "firecrackers"]
 
-def convert_annotation(list_txt, output_path, image_dir, anno_dir, class_names):
+train_output = "/mnt/lzm/data/Xray/train.txt"
+val_output = "/mnt/lzm/data/Xray/val.txt"
 
-    with open(list_txt, 'r') as f, open(output_path, 'w') as wf:
-        while True:
-            line = f.readline().strip()
-            if line is None or not line:
-                break
-            im_p = os.path.join(image_dir, line + IMAGE_EXT)
-            an_p = os.path.join(anno_dir, line + ANNO_EXT)
+
+
+def convert_annotation(_list, output_path):
+
+    with open(output_path, 'w') as wf:
+        for fpath in _list:
 
             # Get annotation.
-            root = etree.parse(an_p).getroot()
-            bboxes = root.xpath('//object/bndbox')
-            names = root.xpath('//object/name')
+            tree = ET.parse(fpath)
+            root = tree.getroot()
 
             box_annotations = []
-            for b, n in zip(bboxes, names):
-                name = n.text
+            for obj_element in root.findall("object"):
+                name = obj_element.find("name").text
                 class_idx = class_names.index(name)
+                
+                box_element = obj_element.find("bndbox")
+                xmin = box_element.find('xmin').text
+                ymin = box_element.find('ymin').text
+                xmax = box_element.find('xmax').text
+                ymax = box_element.find('ymax').text
 
-                xmin = b.find('xmin').text
-                ymin = b.find('ymin').text
-                xmax = b.find('xmax').text
-                ymax = b.find('ymax').text
-                box_annotations.append(','.join([str(xmin), str(ymin), str(xmax), str(ymax), str(class_idx)]))
+                box_annotations.append(','.join([xmin, ymin, xmax, ymax, str(class_idx)]))
+
             
-            annotation = os.path.abspath(im_p) + ' ' + ' '.join(box_annotations) + '\n'
+            img_path = os.path.join(base_dir, root.find("filename").text)
+            annotation = img_path + ' ' + ' '.join(box_annotations) + '\n'
 
             wf.write(annotation)
 
 
-def convert_voc(image_dir, anno_dir, train_list_txt, val_list_txt, classes, train_output, val_output, no_val):
-    IMAGE_EXT = '.jpg'
-    ANNO_EXT = '.xml'
-
-    class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
+def convert_voc(train_list, val_list, train_output, val_output):
 
     # Training set.
-    convert_annotation(train_list_txt, train_output, image_dir, anno_dir, class_names)
-
-    if no_val:
-        return
+    convert_annotation(train_list, train_output)
 
     # Validation set.
-    convert_annotation(val_list_txt, val_output, image_dir, anno_dir, class_names)
+    convert_annotation(val_list, val_output)
 
 
-def main(_argv):
-    train_img_list = []
-    val_img_list = []
+def main():
+    train_list = []
+    val_list = []
 
     for domain_no in range(1, 7):
-        domain_img_list = []
-        domain_base_dir = os.path.join(base_dir, "domain%d" % domain_no)
+        domain_list = []
+        domain_base_dir = os.path.join(base_dir, "domain%d/XML" % domain_no)
         for fname in os.listdir(domain_base_dir):
-            if fname != "XML":
-                fpath = os.path.join(domain_base_dir, fname)
-                domain_img_list.append(fpath)
-        domain_train_img_list, domain_val_img_list = train_test_split(domain_img_list, test_size=ratio)
-        train_img_list += domain_train_img_list
-        val_img_list += domain_val_img_list
+            fpath = os.path.join(domain_base_dir, fname)
+            domain_list.append(fpath)
+        domain_train_list, domain_val_list = train_test_split(domain_list, test_size=ratio)
+        train_list += domain_train_list
+        val_list += domain_val_list
 
-    print (len(train_img_list), len(val_img_list))
-    convert_voc(FLAGS.image_dir, FLAGS.anno_dir, FLAGS.train_list_txt, FLAGS.val_list_txt, FLAGS.classes, FLAGS.train_output, FLAGS.val_output, FLAGS.no_val)
-    print("Complete convert voc data!")
+    convert_voc(train_list, val_list, train_output, val_output)
+    
 
 
 if __name__ == "__main__":
-    try:
-        app.run(main)
-    except SystemExit:
-        pass
+    main()
