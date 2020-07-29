@@ -1,3 +1,5 @@
+# coding: utf8
+
 from absl import app, flags, logging
 from absl.flags import FLAGS
 import os
@@ -9,6 +11,9 @@ from core.config import cfg
 import numpy as np
 from core import utils
 from core.utils import freeze_all, unfreeze_all
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+
 
 flags.DEFINE_string('model', 'yolov4', 'yolov4, yolov3')
 flags.DEFINE_string('weights', './scripts/yolov4.weights', 'pretrained weights')
